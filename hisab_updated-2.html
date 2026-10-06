@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hisab</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#EEF1F5;--card:#fff;--ink:#14213D;--mute:#6B7589;--line:#DDE2EA;--acc:#E8A317;--pos:#1B7F5C;--blue:#2F4B9A;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0E1424;--card:#171F36;--ink:#EAEEF7;--mute:#97A1B8;--line:#26304D;--blue:#7C98F0;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 Hind,system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+h1,h2,.big{font-family:'Bricolage Grotesque',Hind,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:34px;font-weight:800;margin:0;letter-spacing:-.02em}
+h1 span{color:var(--acc)}
+.sub{color:var(--mute);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select,input,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+.chip{white-space:nowrap;border-radius:99px;padding:5px 13px;font-size:13px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.kpis{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.kpis2{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.hero{border-left:6px solid var(--acc)}
+.lbl{color:var(--mute);font-size:13px}
+.big{font-size:30px;font-weight:800;line-height:1.15;letter-spacing:-.02em}
+.hero .big{font-size:46px}
+.grid2{display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+h2{font-size:18px;margin:0 0 10px;font-weight:600}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500;font-size:13px;cursor:pointer}
+.r{text-align:right}
+tr.cl{cursor:pointer}tr.cl:hover td{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.cv{position:relative;height:250px}
+.msg{padding:40px 16px;text-align:center;color:var(--mute)}
+.err{color:#C0392B}
+.pill{display:inline-block;background:color-mix(in srgb,var(--acc) 25%,transparent);border-radius:6px;padding:0 8px;font-size:12px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.mini .big{font-size:22px}
+.ledger .day-head td{background:color-mix(in srgb,var(--acc) 10%,var(--card));border-bottom:0;padding-top:11px;padding-bottom:7px}
+.ledger .day-total td{background:color-mix(in srgb,var(--acc) 4%,var(--card));padding-top:5px;padding-bottom:10px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);max-width:460px;width:92%}
+dialog input{width:100%;margin:6px 0 12px}
+@media(max-width:820px){.kpis,.grid2,.grid3{grid-template-columns:1fr}.kpis2{grid-template-columns:1fr 1fr}.hero .big{font-size:38px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>Hisa<span>b</span></h1><div class="sub" id="src">Loading…</div></div>
+  <div class="bar">
+    <button id="reload">Refresh</button>
+    <button id="cfg">Connect sheet</button>
+  </div>
+</header>
+
+<div class="chips" id="chips"></div>
+<div class="bar" id="custom" hidden style="margin-bottom:12px">
+  <input type="date" id="from" aria-label="From date"> <span class="sub">to</span> <input type="date" id="to" aria-label="To date">
+</div>
+<div id="state"></div>
+
+<main id="main" hidden>
+  <div class="kpis">
+    <div class="card hero"><div class="lbl">Revenue · <span id="rangeLbl"></span></div><div class="big" id="kRev"></div></div>
+    <div class="card"><div class="lbl">Today</div><div class="big" id="kToday"></div></div>
+    <div class="card"><div class="lbl">This month</div><div class="big" id="kMonth"></div></div>
+  </div>
+  <div class="kpis2">
+    <div class="card"><div class="lbl">Transactions</div><div class="big" id="kTx"></div></div>
+    <div class="card"><div class="lbl">Active customers</div><div class="big" id="kCust"></div></div>
+    <div class="card"><div class="lbl">Average sale</div><div class="big" id="kAvg"></div></div>
+    <div class="card"><div class="lbl">Avg per day</div><div class="big" id="kDay"></div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h2>Revenue by day</h2><div class="cv"><canvas id="cTrend"></canvas></div>
+      <div class="sub" id="dayNote" style="margin-top:8px"></div></div>
+    <div class="card"><h2>Recent transactions</h2><div class="tw" style="max-height:300px;overflow-y:auto"><table id="tRecent"></table></div></div>
+  </div>
+
+  <div class="grid3">
+    <div class="card"><h2>Revenue by customer</h2><div class="cv"><canvas id="cBar"></canvas></div></div>
+    <div class="card"><h2>Share of revenue</h2><div class="cv"><canvas id="cPie"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="bar" style="justify-content:space-between;margin-bottom:6px">
+      <h2 style="margin:0">Customers</h2>
+      <input id="q" type="search" placeholder="Search customer (e.g. Abhinav)" aria-label="Search customer">
+    </div>
+    <div class="tw"><table id="tCust"></table></div>
+  </div>
+
+  <div class="card">
+    <div class="bar" style="justify-content:space-between;margin-bottom:10px">
+      <h2 style="margin:0">Customer हिसाब / Daily Ledger</h2>
+      <select id="custSel" aria-label="Customer"></select>
+    </div>
+    <div id="detail"><div class="msg">Pick a customer, or click a row above.</div></div>
+  </div>
+</main>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <h2>Connect your Google Sheet</h2>
+    <label class="sub">Apps Script web app URL</label>
+    <input id="url" placeholder="https://script.google.com/macros/s/…/exec">
+    <label class="sub">Read key</label>
+    <input id="key" type="password" placeholder="READ_KEY from Script Properties">
+    <div class="bar"><button value="save" id="save">Save &amp; load</button><button value="demo" id="demo">Use demo data</button><button value="x">Cancel</button></div>
+  </form>
+</dialog>
+
+<script>
+const $=s=>document.querySelector(s);
+const fmt=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const short=s=>new Date(s+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const PRESETS=[['today','Today'],['yest','Yesterday'],['7','Last 7 days'],['30','Last 30 days'],['month','This month'],['prev','Previous month'],['custom','Custom range'],['all','All time']];
+let all=[],preset='30',cust='',sortBy='rev',charts={};
+let theme=getComputedStyle(document.documentElement);
+
+function range(){
+  const t=new Date(),T=iso(t);
+  switch(preset){
+    case'today':return[T,T];
+    case'yest':{const y=iso(addDays(t,-1));return[y,y]}
+    case'7':return[iso(addDays(t,-6)),T];
+    case'30':return[iso(addDays(t,-29)),T];
+    case'month':return[iso(new Date(t.getFullYear(),t.getMonth(),1)),T];
+    case'prev':return[iso(new Date(t.getFullYear(),t.getMonth()-1,1)),iso(new Date(t.getFullYear(),t.getMonth(),0))];
+    case'custom':return[$('#from').value||'0000-00-00',$('#to').value||'9999-99-99'];
+    default:return['0000-00-00','9999-99-99'];
+  }
+}
+const inRange=(rows,[a,b])=>rows.filter(r=>r.date>=a&&r.date<=b);
+
+function demo(){
+  let s=7;const rnd=()=>(s=(s*9301+49297)%233280)/233280;
+  const names=['Rahul','Aman','Priya','Sneha','Vikram','Meera','Karan','Anita'],out=[];let n=1;
+  for(let i=75;i>=0;i--){const d=addDays(new Date(),-i);
+    for(let k=0;k<Math.floor(rnd()*5);k++){
+      const h=9+Math.floor(rnd()*10),m=Math.floor(rnd()*60);
+      const q=1+Math.floor(rnd()*5),rt=[60,70,80,100][Math.floor(rnd()*4)];
+      out.push({id:'TXN-'+String(n++).padStart(5,'0'),date:iso(d),time:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`,
+        customer:names[Math.floor(Math.pow(rnd(),1.6)*names.length)],quantity:q,rate:rt,amount:q*rt,notes:rnd()>.8?'Cash':''});}}
+  return out;
+}
+
+async function load(){
+  const url=store.get('k_url'),key=store.get('k_key');
+  $('#state').innerHTML='<div class="msg">Loading transactions…</div>';$('#main').hidden=true;
+  try{
+    if(!url||store.get('k_demo')==='1'){all=demo();$('#src').textContent='Showing demo data. Connect your sheet to see real sales.'}
+    else{
+      const r=await fetch(url+(url.includes('?')?'&':'?')+'action=list&key='+encodeURIComponent(key||''));
+      const j=await r.json();
+      if(!j.success)throw new Error(j.message||'Request rejected');
+      all=j.rows.map(x=>({...x,amount:Number(x.amount),quantity:Number(x.quantity)||0,rate:Number(x.rate)||0})).filter(x=>x.date&&isFinite(x.amount));
+      $('#src').textContent=`Live from Google Sheets · ${all.length} transactions`;
+    }
+    $('#state').innerHTML='';$('#main').hidden=false;render();
+  }catch(e){
+    $('#state').innerHTML=`<div class="card msg err">Unable to load data. ${e.message}<br><br><button onclick="load()">Retry</button></div>`;
+  }
+}
+
+const qr=r=>r.quantity?`${+r.quantity.toFixed(2)} × ₹${+r.rate.toFixed(2)}`:'';
+function agg(rows){
+  const m={};
+  rows.forEach(r=>{const c=m[r.customer]||(m[r.customer]={name:r.customer,rev:0,qty:0,n:0,max:0,first:r.date,last:r.date});
+    c.rev+=r.amount;c.qty+=r.quantity||0;c.n++;c.max=Math.max(c.max,r.amount);if(r.date<c.first)c.first=r.date;if(r.date>c.last)c.last=r.date});
+  return Object.values(m);
+}
+function mk(id,cfg){charts[id]&&charts[id].destroy();charts[id]=new Chart($('#'+id),cfg)}
+const PAL=['#2F4B9A','#E8A317','#1B7F5C','#C0392B','#7A5BC7','#2A9DB5','#B5651D','#6B7589'];
+
+function render(){
+  const R=range(),rows=inRange(all,R),T=iso(new Date()),M=T.slice(0,7);
+  $('#rangeLbl').textContent=preset==='all'?'All time':short(R[0])+' – '+short(R[1]);
+  const rev=rows.reduce((s,r)=>s+r.amount,0),cs=agg(rows),days={};
+  rows.forEach(r=>days[r.date]=(days[r.date]||0)+r.amount);
+  const dk=Object.keys(days).sort();
+  $('#kRev').textContent=fmt(rev);
+  $('#kToday').textContent=fmt(all.filter(r=>r.date===T).reduce((s,r)=>s+r.amount,0));
+  $('#kMonth').textContent=fmt(all.filter(r=>r.date.startsWith(M)).reduce((s,r)=>s+r.amount,0));
+  $('#kTx').textContent=rows.length;$('#kCust').textContent=cs.length;
+  $('#kAvg').textContent=rows.length?fmt(rev/rows.length):'₹0';
+  $('#kDay').textContent=dk.length?fmt(rev/dk.length):'₹0';
+
+  const empty='<div class="msg">No transactions found<br>for the selected period.</div>';
+  const ink=getComputedStyle(document.documentElement).getPropertyValue('--mute').trim(),grid=getComputedStyle(document.documentElement).getPropertyValue('--line').trim();
+  Chart.defaults.color=ink;Chart.defaults.font.family='Hind,sans-serif';
+  const axes={x:{grid:{display:false}},y:{grid:{color:grid},ticks:{callback:v=>fmt(v)}}};
+
+  // daily trend: fill gaps so the line is honest
+  const lab=[],val=[],cnt=[];
+  if(dk.length){const a=preset==='all'?dk[0]:R[0],b=preset==='all'?dk[dk.length-1]:(R[1]>T?T:R[1]);
+    for(let d=new Date(a+'T00:00');iso(d)<=b;d.setDate(d.getDate()+1)){const k=iso(d);lab.push(short(k));val.push(days[k]||0);cnt.push(rows.filter(r=>r.date===k).length)}}
+  mk('cTrend',{type:'line',data:{labels:lab,datasets:[{label:'Revenue',data:val,borderColor:'#E8A317',backgroundColor:'#E8A31722',fill:true,tension:.25,pointRadius:lab.length>40?0:3}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)+' · '+cnt[c.dataIndex]+' sales'}}},scales:axes}});
+  if(dk.length){const best=dk.reduce((a,b)=>days[a]>=days[b]?a:b),low=dk.reduce((a,b)=>days[a]<=days[b]?a:b);
+    $('#dayNote').innerHTML=`Best day <b>${short(best)}</b> ${fmt(days[best])} · Slowest day with sales <b>${short(low)}</b> ${fmt(days[low])}`}
+  else $('#dayNote').textContent='';
+
+  const rec=[...rows].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).slice(0,15);
+  $('#tRecent').innerHTML=rec.length?rec.map(r=>`<tr><td>${short(r.date)} ${(r.time||'').slice(0,5)}</td><td>${esc(r.customer)}<div class="sub">${qr(r)}</div></td><td class="r">${fmt(r.amount)}</td></tr>`).join(''):`<tr><td>${empty}</td></tr>`;
+
+  const top=[...cs].sort((a,b)=>b.rev-a.rev),topN=top.slice(0,8);
+  mk('cBar',{type:'bar',data:{labels:topN.map(c=>c.name),datasets:[{data:topN.map(c=>c.rev),backgroundColor:'#2F4B9A',borderRadius:4}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{grid:{color:grid},ticks:{callback:v=>fmt(v)}},y:{grid:{display:false}}}}});
+  mk('cPie',{type:'doughnut',data:{labels:topN.map(c=>c.name),datasets:[{data:topN.map(c=>c.rev),backgroundColor:PAL,borderWidth:0}]},
+    options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)}}}}});
+
+  custTable(cs,rev);
+  const sel=$('#custSel'),names=[...new Set(all.map(r=>r.customer))].sort();
+  sel.innerHTML='<option value="">Select customer</option>'+names.map(n=>`<option ${n===cust?'selected':''}>${esc(n)}</option>`).join('');
+  detail(R);
+}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function custTable(cs,rev){
+  const q=$('#q').value.trim().toLowerCase();
+  let list=cs.filter(c=>!q||c.name.toLowerCase().includes(q));
+  list.sort((a,b)=>sortBy==='n'?b.n-a.n:b.rev-a.rev);
+  const th=(k,t,r)=>`<th class="${r?'r':''}" onclick="sortBy='${k}';render()">${t}${sortBy===k?' ▾':''}</th>`;
+  $('#tCust').innerHTML=list.length?`<tr><th>Customer</th>${th('rev','Revenue',1)}${th('n','Sales',1)}<th class="r">Qty sold</th><th class="r">Avg sale</th><th class="r">Highest</th><th>First</th><th>Latest</th><th class="r">% of total</th></tr>`+
+    list.map(c=>`<tr class="cl" data-c="${esc(c.name)}"><td><b>${esc(c.name)}</b></td><td class="r">${fmt(c.rev)}</td><td class="r">${c.n}</td><td class="r">${+c.qty.toFixed(2)}</td><td class="r">${fmt(c.rev/c.n)}</td><td class="r">${fmt(c.max)}</td><td>${short(c.first)}</td><td>${short(c.last)}</td><td class="r">${rev?(c.rev/rev*100).toFixed(1):0}%</td></tr>`).join('')
+    :'<tr><td><div class="msg">No transactions found<br>for the selected period.</div></td></tr>';
+  document.querySelectorAll('tr.cl').forEach(tr=>tr.onclick=()=>{cust=tr.dataset.c;render();$('#detail').scrollIntoView({behavior:'smooth',block:'nearest'})});
+}
+
+function detail(R){
+  const box=$('#detail');
+  if(!cust){box.innerHTML='<div class="msg">Search or select a customer to see their complete हिसाब.</div>';charts.cDet&&charts.cDet.destroy();return}
+  const rows=inRange(all,R).filter(r=>r.customer===cust);
+  if(!rows.length){box.innerHTML=`<div class="msg">${esc(cust)} has no transactions<br>in the selected period.</div>`;charts.cDet&&charts.cDet.destroy();return}
+  const c=agg(rows)[0],daily={};
+  rows.forEach(r=>(daily[r.date]||(daily[r.date]=[])).push(r));
+  const dates=Object.keys(daily).sort((a,b)=>b.localeCompare(a));
+  const ledger=dates.map(date=>{
+    const dayRows=[...daily[date]].sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    const total=dayRows.reduce((s,r)=>s+r.amount,0),qty=dayRows.reduce((s,r)=>s+(Number(r.quantity)||0),0);
+    const entries=dayRows.map(r=>`<tr><td>${(r.time||'').slice(0,5)||'—'}</td><td class="r">${r.quantity?+Number(r.quantity).toFixed(2):'—'}</td><td class="r">${r.rate?fmt(r.rate):'—'}</td><td class="r"><b>${fmt(r.amount)}</b></td><td>${r.notes?esc(r.notes):'—'}</td></tr>`).join('');
+    return `<tr class="day-head"><td colspan="5"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><b>${short(date)}</b><span class="pill">${dayRows.length} ${dayRows.length===1?'entry':'entries'} · ${qty?qty.toFixed(2)+' qty · ':''}<b>${fmt(total)}</b></span></div></td></tr>${entries}<tr class="day-total"><td colspan="3" class="r"><b>Day total</b></td><td class="r"><b>${fmt(total)}</b></td><td></td></tr>`;
+  }).join('');
+  box.innerHTML=`<div class="mini"><div><div class="lbl">Total हिसाब</div><div class="big">${fmt(c.rev)}</div></div><div><div class="lbl">Transactions</div><div class="big">${c.n}</div></div><div><div class="lbl">Total quantity</div><div class="big">${+c.qty.toFixed(2)}</div></div><div><div class="lbl">Average sale</div><div class="big">${fmt(c.rev/c.n)}</div></div><div><div class="lbl">Days with entries</div><div class="big">${dates.length}</div></div><div><div class="lbl">Highest day</div><div class="big">${fmt(Math.max(...dates.map(d=>daily[d].reduce((s,r)=>s+r.amount,0))))}</div></div></div><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 10px;flex-wrap:wrap"><div><b>${esc(cust)}</b><span class="sub"> · ${short(R[0])} – ${short(R[1])}</span></div><div class="sub">Daily ledger · newest first</div></div><div class="grid3" style="margin:0 0 12px"><div class="cv"><canvas id="cDet"></canvas></div><div class="card" style="padding:12px"><div class="lbl">Period summary</div><div style="margin-top:8px"><div><span class="sub">From</span> <b>${short(R[0])}</b></div><div><span class="sub">To</span> <b>${short(R[1])}</b></div><div style="margin-top:6px"><span class="sub">Total</span> <b>${fmt(c.rev)}</b></div></div></div></div><div class="tw" style="max-height:460px;overflow-y:auto"><table class="ledger"><tr><th>Time</th><th class="r">Quantity</th><th class="r">Rate</th><th class="r">Amount</th><th>Notes</th></tr>${ledger}</table></div>`;
+  const d={};rows.forEach(r=>d[r.date]=(d[r.date]||0)+r.amount);const k=Object.keys(d).sort();const grid=getComputedStyle(document.documentElement).getPropertyValue('--line').trim();
+  mk('cDet',{type:'bar',data:{labels:k.map(short),datasets:[{label:'Daily total',data:k.map(x=>d[x]),backgroundColor:'#E8A317',borderRadius:4}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{grid:{display:false}},y:{grid:{color:grid},ticks:{callback:v=>fmt(v)}}}}});
+}
+
+// wiring
+$('#chips').innerHTML=PRESETS.map(([k,t])=>`<button class="chip" data-k="${k}">${t}</button>`).join('');
+function chips(){document.querySelectorAll('.chip').forEach(b=>b.classList.toggle('on',b.dataset.k===preset));$('#custom').hidden=preset!=='custom'}
+$('#chips').onclick=e=>{const k=e.target.dataset.k;if(!k)return;preset=k;chips();all.length&&render()};
+['#from','#to'].forEach(s=>$(s).onchange=()=>render());
+$('#q').oninput=()=>{const q=$('#q').value.trim().toLowerCase();const R=range();if(q){const names=[...new Set(inRange(all,R).map(r=>r.customer))].sort();const exact=names.find(n=>n.toLowerCase()===q);const partial=names.filter(n=>n.toLowerCase().includes(q));if(exact)cust=exact;else if(partial.length===1)cust=partial[0];}render();};
+$('#custSel').onchange=e=>{cust=e.target.value;render()};
+$('#reload').onclick=load;
+$('#cfg').onclick=()=>{$('#url').value=store.get('k_url')||'';$('#key').value=store.get('k_key')||'';$('#dlg').showModal()};
+$('#dlg').onclose=()=>{
+  const v=$('#dlg').returnValue;
+  if(v==='save'){store.set('k_url',$('#url').value.trim());store.set('k_key',$('#key').value.trim());store.set('k_demo','0');load()}
+  if(v==='demo'){store.set('k_demo','1');load()}
+};
+chips();load();
+</script>
+</body>
+</html>
